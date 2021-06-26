@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import it.polito.tdp.PremierLeague.model.Model;
+import it.polito.tdp.PremierLeague.model.Scontro;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -39,7 +40,7 @@ public class FXMLController {
     private TextField txtMinuti; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbMese"
-    private ComboBox<?> cmbMese; // Value injected by FXMLLoader
+    private ComboBox<Integer> cmbMese; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbM1"
     private ComboBox<?> cmbM1; // Value injected by FXMLLoader
@@ -52,12 +53,44 @@ public class FXMLController {
 
     @FXML
     void doConnessioneMassima(ActionEvent event) {
+    	txtResult.clear();
+    	if(model.getGrafo()==null) {
+    		txtResult.setText("devi prima creare un grafo");
+    		return;
+    	}
+    	List <Scontro>stampa=model.maxScontro();
+    	if(stampa.isEmpty()) {
+    		txtResult.appendText("non ci sono scontri");
+    		return ;
+    	}
+    	for(Scontro s:stampa) {
+    		txtResult.appendText(s+"\n");
+    	}
     	
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
-    	
+    	txtResult.clear();
+    	String sMin=txtMinuti.getText();
+    	if(sMin.length()==0) {
+    		txtResult.appendText("devi inserire i minuti!");
+    		return;
+    	}
+    	int min=0;
+    	try {min=Integer.parseInt(sMin);}
+    	    catch(NumberFormatException e) {
+    	    	txtResult.appendText("i minuti devono essere espressi sotto forma di intero!");
+    	    	return;}
+    	if(cmbMese.getValue()==null) {
+    		txtResult.appendText("devi scegliere un mese!");
+    		return ;
+    	}
+    	int mese=cmbMese.getValue();
+    	model.creaGrafo(mese,min);
+    	txtResult.appendText("grafo creato \n");
+    	txtResult.appendText("i vertici sono  "+model.getNVertici()+"\n");
+    	txtResult.appendText("gli archi sono  "+model.getNArchi()+"\n");
     }
 
     @FXML
@@ -79,6 +112,9 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	for(int i=1;i<13;i++) {
+    		cmbMese.getItems().add(i);
+    	}
   
     }
     

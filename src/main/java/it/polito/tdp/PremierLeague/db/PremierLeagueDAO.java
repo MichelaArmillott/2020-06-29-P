@@ -5,10 +5,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+
 import it.polito.tdp.PremierLeague.model.Action;
 import it.polito.tdp.PremierLeague.model.Match;
 import it.polito.tdp.PremierLeague.model.Player;
+import it.polito.tdp.PremierLeague.model.Scontro;
 
 public class PremierLeagueDAO {
 	
@@ -60,33 +64,91 @@ public class PremierLeagueDAO {
 		}
 	}
 	
-	public List<Match> listAllMatches(){
+	public void listAllMatches(Map<Integer, Match> idMap){
 		String sql = "SELECT m.MatchID, m.TeamHomeID, m.TeamAwayID, m.teamHomeFormation, m.teamAwayFormation, m.resultOfTeamHome, m.date, t1.Name, t2.Name   "
 				+ "FROM Matches m, Teams t1, Teams t2 "
 				+ "WHERE m.TeamHomeID = t1.TeamID AND m.TeamAwayID = t2.TeamID";
-		List<Match> result = new ArrayList<Match>();
+		
 		Connection conn = DBConnect.getConnection();
 
 		try {
 			PreparedStatement st = conn.prepareStatement(sql);
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
-
+                  if(!idMap.containsKey(res.getInt("m.MatchID"))) {
 				
 				Match match = new Match(res.getInt("m.MatchID"), res.getInt("m.TeamHomeID"), res.getInt("m.TeamAwayID"), res.getInt("m.teamHomeFormation"), 
 							res.getInt("m.teamAwayFormation"),res.getInt("m.resultOfTeamHome"), res.getTimestamp("m.date").toLocalDateTime(), res.getString("t1.Name"),res.getString("t2.Name"));
 				
 				
-				result.add(match);
+				idMap.put(match.getMatchID(), match);
 
-			}
+			}}
 			conn.close();
-			return result;
+			
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			
+		}
+	}
+
+	public List< Match> getVertici(int mese, Map<Integer, Match> idMap) {
+		String sql="SELECT m.MatchID,MONTH(m.Date) as mese "
+				+ "FROM matches m "
+				+ "WHERE MONTH(m.Date)=? ";
+		List<Match>stampa=new ArrayList();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, mese);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				stampa.add(idMap.get(res.getInt("MatchID")));
+                 }
+			conn.close();
+			return stampa;
+			
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;
+			
 		}
+		
+		
+	}
+
+	public List<Scontro> scontri(int mese,Map<Integer, Match> idMap,int minuti) {
+		String sql="SELECT m.MatchID AS id1,m2.MatchID AS id2,COUNT(*) AS peso "
+				+ "FROM matches m,actions a,matches m2,actions a2 "
+				+ "WHERE MONTH(m.Date)=? AND MONTH(m2.Date)=? AND m.MatchID>m2.MatchID AND m.MatchID=a.MatchID AND m2.MatchID=a2.MatchID AND a.PlayerID=a2.PlayerID AND a.TimePlayed>? "
+				+ "GROUP BY m.MatchID ,m2.MatchID ";
+		List<Scontro>stampa=new ArrayList<>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, mese);
+			st.setInt(2, mese);
+			st.setInt(3, minuti);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				stampa.add(new Scontro(idMap.get(res.getInt("id1")),idMap.get(res.getInt("id2")),res.getInt("peso")));
+                 }
+			conn.close();
+			return stampa;
+			
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+			
+		}
+		
+		
+		
 	}
 	
 }
